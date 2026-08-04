@@ -21,6 +21,13 @@
         <java.version>17</java.version>
         <springdoc.version>2.5.0</springdoc.version>
         <aws.sdk.version>2.25.34</aws.sdk.version>
+        <!-- Modernize Mockito/ByteBuddy: Spring Boot 3.2.x-managed versions
+             (older) cannot instrument on newer JVMs and fail with
+             "Mockito cannot mock this class". NOTE: the full build still
+             requires a JDK <= 21 because the pinned Lombok has no support
+             for newer JDKs; see the README "Testing" section. -->
+        <byte-buddy.version>1.17.5</byte-buddy.version>
+        <mockito.version>5.16.1</mockito.version>
     </properties>
 
     <dependencies>

@@ -87,3 +87,21 @@ Configuration is externalized via environment variables (see `src/main/resources
 mvn test
 ```
 
+> **JDK note:** This project targets Java 17 and must be built/tested with
+> **JDK 17 or 21**. Spring Boot 3.2.x's pinned Lombok has no support for newer
+> JDKs, and Mockito's inline mock-maker also fails on JDK 22+ with
+> `MockitoException: Mockito cannot mock this class`. If Maven launches on a
+> newer default JDK (e.g. Homebrew's `openjdk@26` when `JAVA_HOME` is unset),
+> point it at a compatible JDK:
+>
+> ```bash
+> export JAVA_HOME=/path/to/jdk-17-or-21
+> mvn test
+> ```
+>
+> The `pom.xml` also overrides Spring Boot's Mockito/ByteBuddy versions to a
+> newer pair for robustness, but a JDK ≤21 is still required for the full build.
+> (Tip: `unset JAVA_HOME` won't help — the Homebrew `mvn` shim then defaults
+> to the latest brew JVM. Set `JAVA_HOME` explicitly.)
+
+
