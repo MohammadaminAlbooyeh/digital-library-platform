@@ -2,10 +2,16 @@
 
 ## Immediate (before pushing)
 
-- [ ] Run `mvn -B verify` locally to confirm the build and all tests pass (JDK 21 or pinned 17).
-- [ ] Run the recommendation-service test suite locally:
+- [x] Run `mvn -B verify` locally to confirm the build and all tests pass (JDK 21 or pinned 17).
+- [x] Run the recommendation-service test suite locally:
   `cd recommendation-service && pip install -r requirements-dev.txt && python -m pytest -q`.
-- [ ] Push the current commit to `origin/main` and confirm CI passes on GitHub Actions.
+- [x] Push the current commit to `origin/main` and confirm CI passes on GitHub Actions.
+
+## CI hygiene (just discovered)
+
+- [ ] Bump deprecated GitHub Actions in `.github/workflows/ci.yml` to silence warnings:
+  `actions/checkout@v5`, `actions/setup-java@v5`, `actions/setup-python@v5`
+  (CI run #1 passed but logged 3 deprecation warnings about Node 20 / setup-java v4).
 
 ## Short-term polish
 
