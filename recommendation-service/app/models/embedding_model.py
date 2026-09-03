@@ -1,4 +1,17 @@
-"""Simple content-embedding model used by the recommendation service."""
+"""Simple content-embedding model used by the recommendation service.
+
+Model choice: a **bag-of-words** embedding with the **hashing trick**
+(`MD5(token) % vector_size`). This is a deterministic, dependency-free
+representation — no pretrained transformers or external model weights are
+required, which keeps the microservice lightweight and fast to start up
+inside containers with minimal RAM.
+
+Trade-offs:
+- Pro: zero model download, fully reproducible, CPU-friendly.
+- Con: no semantic understanding; synonyms or related words that don't share
+  tokens will not be similar. Sufficient as a baseline fallback before
+  swapping in a transformer embedding (e.g. `sentence-transformers/paraphrase-MiniLM-L3-v2`).
+"""
 
 from __future__ import annotations
 

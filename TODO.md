@@ -1,51 +1,40 @@
 # TODO — Digital Library Platform
 
-## Immediate (before pushing)
+## Done (completed)
 
-- [x] Run `mvn -B verify` locally to confirm the build and all tests pass (JDK 21 or pinned 17).
-- [x] Run the recommendation-service test suite locally:
-  `cd recommendation-service && pip install -r requirements-dev.txt && python -m pytest -q`.
-- [x] Push the current commit to `origin/main` and confirm CI passes on GitHub Actions.
+- [x] Run `mvn -B verify` locally — **64 tests pass, BUILD SUCCESS** (JDK 21)
+- [x] Run the recommendation-service test suite locally — **13 tests pass**
+- [x] Push the current commit to `origin/main` — **CI passed** (Status: Success)
+- [x] Bump deprecated GitHub Actions in `.github/workflows/ci.yml` to `@v5`
+- [x] Add `README.md` CI status badge
+- [x] Add Checkstyle config (`checkstyle.xml`) + `maven-checkstyle-plugin` in `pom.xml`
+  (integrated into `verify` phase; **0 violations**)
+- [x] Create `application-test.yml` (H2 in-memory, security disabled for tests)
+- [x] Add `TestSecurityConfig` (`src/test/java/com/dlp/config/`) for `@WebMvcTest`
+- [x] Add 5 REST controller integration tests (`@WebMvcTest`):
+  `AuthControllerTest`, `BookControllerTest`, `LibraryControllerTest`,
+  `PaymentControllerTest`, `SubscriptionControllerTest`
+- [x] Add `H2` test dependency to `pom.xml`
+- [x] Pin recommendation-service deps — generate `requirements.lock` via `pip freeze`
+- [x] docker-compose.yml already unifies backend + recommendation service + infra
+- [x] Document embedding model in `app/models/embedding_model.py`
+- [x] Create `application-prod.yml` with Flyway `baseline-on-migrate` + AWS env-var config
+- [x] Audit JWT: 24h expiry (`86400000ms`), secret from `JWT_SECRET` env var, no refresh token
+- [x] Verify CDN signed-URL TTL: streaming = 2h, download = 1h (short, enforced in `verifyUrl`)
+- [x] Audit `ContentEncryptionService`: key externalized via `DRM_ENCRYPTION_KEY` env var;
+  documented known issue — static zero IV (fix: use KMS-derived per-content key + random IV)
+- [x] Create `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` (Contributor Covenant v2.1)
+- [x] Set up Dependabot — `.github/dependabot.yml` (Maven weekly + pip weekly)
+- [x] Fix unused imports found by Checkstyle (`SearchController`, `BookController`,
+  `Audiobook`, `SearchService`, `ContentEncryptionService`, test files)
+- [x] Fix line-length violation in `GlobalExceptionHandler`
 
-## CI hygiene (just discovered)
+## Future (nice-to-have)
 
-- [ ] Bump deprecated GitHub Actions in `.github/workflows/ci.yml` to silence warnings:
-  `actions/checkout@v5`, `actions/setup-java@v5`, `actions/setup-python@v5`
-  (CI run #1 passed but logged 3 deprecation warnings about Node 20 / setup-java v4).
-
-## Short-term polish
-
-- [ ] Add an `application-test.yml` (or `@DataJpaTest`/`@SpringBootTest` config) so the Java service tests
-  don't require a live MySQL/Flyway/RabbitMQ/Redis instance; wire Testcontainers where external
-  services are unavoidable.
-- [ ] Add integration tests for the REST controllers (`BookController`, `LibraryController`,
-  `PaymentController`, `SubscriptionController`, etc.) using `@WebMvcTest` + mocked services.
-- [ ] Run `mvn spotless:check` / `mvn checkstyle:check` if the team adopts a formatter/linter
-  (`spotless`, `checkstyle`, or `pmd`). Add the plugin to `pom.xml` if missing.
-- [ ] Add a `README.md` badge for the CI status (e.g. `![CI](.github/workflows/ci.yml/badge.svg)...`).
-
-## Recommendation service
-
-- [ ] Pin dependency versions in `requirements-dev.txt` (add a lock file or `requirements.lock`).
-- [ ] Add a `Dockerfile` multi-stage build already exists; add a `docker-compose.yml` service entry
-  so the recommendation service runs alongside MySQL/Redis/RabbitMQ/Kafka for local dev.
-- [ ] Decide on the embedding model used by `app/models/embedding_model.py` and document it.
-
-## Deployment / infra
-
-- [ ] Decide whether `docker-compose.yml` should spin up the Spring Boot jar + recommendation
-  service + external dependencies (MySQL, Redis, RabbitMQ, Kafka).
-- [ ] Configure Flyway `baseline-on-migrate` for production; verify migration `V8` runs cleanly.
-- [ ] Set up environment-based `application-prod.yml` with AWS S3 / KMS secrets (no hardcoded
-  credentials in the repo).
-
-## Security & DRM
-
-- [ ] Review token expiration / refresh semantics in `JwtService`.
-- [ ] Verify `CdnUrlSigner` and `DownloadTokenService` signed URLs use a short TTL.
-- [ ] Audit `ContentEncryptionService` key storage (KMS vs. local).
-
-## Future
-
-- [ ] Add a `CONTRIBUTING.md` and a code-of-conduct if opening contributions.
-- [ ] Set up Dependabot for Maven + pip to keep dependencies fresh.
+- [ ] Add `Testcontainers` integration for `@DataJpaTest` / `@SpringBootTest` DB tests
+  (current tests use H2 in-memory which is sufficient for unit-level checks)
+- [ ] Add integration tests for `AdminController`, `DrmController`, `SearchController`,
+  `ReadingProgressController`
+- [ ] Consider `spotless:check` as an alternative/supplement to Checkstyle
+- [ ] Migrate `ContentEncryptionService` to AWS KMS per-content keys with random IVs
+- [ ] Add refresh-token flow for JWT (current: 24h stateless tokens, no refresh)

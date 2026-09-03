@@ -2,13 +2,11 @@ package com.dlp.controller;
 
 import com.dlp.model.dto.BookDetailDTO;
 import com.dlp.model.dto.SearchRequest;
-import com.dlp.model.entity.Book;
 import com.dlp.security.CurrentUserProvider;
 import com.dlp.service.SearchService;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/search")

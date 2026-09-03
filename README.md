@@ -1,5 +1,7 @@
 # Digital Library Platform
 
+[![CI](https://github.com/MohammadaminAlbooyeh/digital-library-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/MohammadaminAlbooyeh/digital-library-platform/actions/workflows/ci.yml)
+
 A full-stack digital library platform with a Spring Boot backend, a Python recommendation
 microservice, and Docker-based infrastructure.
 

@@ -55,7 +55,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Object> handleConflict(DataIntegrityViolationException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body(HttpStatus.CONFLICT, "Data conflict: " + ex.getMostSpecificCause().getMessage()));
+        String msg = "Data conflict: " + ex.getMostSpecificCause().getMessage();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body(HttpStatus.CONFLICT, msg));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

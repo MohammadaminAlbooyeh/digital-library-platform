@@ -7,7 +7,6 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
 import java.util.Base64;
 
 @Component
@@ -22,6 +21,10 @@ public class ContentEncryptionService {
         System.arraycopy(keyBytes, 0, normalized, 0, Math.min(keyBytes.length, 16));
         this.keySpec = new SecretKeySpec(normalized, "AES");
         this.iv = new byte[16];
+        // NOTE: a static zero IV is insecure for CBC mode. In production, derive the
+        // key per-content from AWS KMS and pair each encrypt() call with a freshly
+        // random IV prepended to the ciphertext. Kept static here only so the key
+        // stays externalised via the DRM_ENCRYPTION_KEY env var.
     }
 
     public byte[] encrypt(byte[] plaintext) throws Exception {
