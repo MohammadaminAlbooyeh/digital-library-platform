@@ -5,6 +5,8 @@ import com.dlp.model.enums.ContentType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -26,10 +28,12 @@ public class UserLibraryItem {
     private Long contentId;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "content_type", nullable = false)
     private ContentType contentType;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "access_type", nullable = false)
     private AccessType accessType = AccessType.OWNED;
 

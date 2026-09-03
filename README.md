@@ -104,4 +104,17 @@ mvn test
 > (Tip: `unset JAVA_HOME` won't help — the Homebrew `mvn` shim then defaults
 > to the latest brew JVM. Set `JAVA_HOME` explicitly.)
 
+### Recommendation service tests
+
+```bash
+cd recommendation-service
+pip install -r requirements-dev.txt
+python -m pytest -q
+```
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs `mvn -B verify` (JDK 21) and the recommendation
+service's pytest suite on every push to `main` and every pull request.
+
 
