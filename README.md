@@ -7,96 +7,80 @@ microservice, and Docker-based infrastructure.
 
 ## Architecture
 
-```mermaid
-%%{init: {'theme':'default','flowchart':{'curve':'linear'}}}%%
-flowchart LR
-    subgraph CLIENT["Client"]
-        CLI[Web / Mobile App]
-    end
-
-    subgraph "Public Edge"
-        LB[Load Balancer]
-        CDN[AWS S3 CDN]
-    end
-
-    subgraph "Backend - Spring Boot"
-        AUTH[Auth Controller]
-        CATALOG[Book Catalog API]
-        SEARCH[Search API]
-        LIBRARY[Library API]
-        PROGRESS[Reading Progress]
-        PAYMENTS[Payments API]
-        SUBSCRIPTIONS[Subscriptions API]
-        DRM[DRM API]
-        ADMIN[Admin API]
-
-        subgraph "Internal"
-            DRM_SVC[DRM Service]
-            ENCRYPTION[Content Encryption]
-            SIGNING[HMAC Token Signing]
-            DELIVERY[Content Delivery]
-            KAFKA_PUB[Kafka Producer]
-        end
-    end
-
-    subgraph "Rec-Svc"
-        RECO[FastAPI Rec Service]
-    end
-
-    subgraph "Infrastructure"
-        MYSQL[(MySQL)]
-        REDIS[(Redis)]
-        KAFKA[(Kafka)]
-        S3[(AWS S3 + KMS)]
-    end
-
-    CLI ==>|"HTTPS"| LB
-    LB ==>|"REST API"| AUTH
-    LB ==>|"REST API"| CATALOG
-    LB ==>|"REST API"| SEARCH
-    LB ==>|"REST API"| LIBRARY
-    LB ==>|"REST API"| PROGRESS
-    LB ==>|"REST API"| PAYMENTS
-    LB ==>|"REST API"| SUBSCRIPTIONS
-    LB ==>|"REST API"| DRM
-    LB ==>|"REST API"| ADMIN
-
-    AUTH ==>|DB| MYSQL
-    CATALOG ==>|DB| MYSQL
-    SEARCH ==>|DB| MYSQL
-    LIBRARY ==>|DB| MYSQL
-    PROGRESS ==>|DB| MYSQL
-    PAYMENTS ==>|DB| MYSQL
-    SUBSCRIPTIONS ==>|DB| MYSQL
-    DRM ==>|DB| MYSQL
-    ADMIN ==>|DB| MYSQL
-
-    AUTH ==>|refresh| REDIS
-    LIBRARY ==>|tokens| REDIS
-    DELIVERY -.->|cache| REDIS
-
-    PROGRESS ==>|events| KAFKA_PUB
-    KAFKA_PUB ==>|produce| KAFKA
-    RECO -.->|consume| KAFKA
-
-    LIBRARY ==>|fallback| RECO
-    RECO ==>|"HTTP"| DELIVERY
-    DELIVERY ==>|"signed URL"| CDN
-
-    LIBRARY ==>|DRM| DRM_SVC
-    DRM ==> DRM_SVC
-    DRM_SVC ==> ENCRYPTION
-    DRM_SVC ==> SIGNING
-    DELIVERY ==>|content| S3
-    ENCRYPTION ==>|keys| S3
-
-    classDef store fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    classDef cache fill:#ede7f6,stroke:#7b1fa2,stroke-width:2px
-    classDef events fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    classDef cloud fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-
-    class MYSQL,REDIS,KAFKA store
-    class S3 cloud
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                              Client                                  │
+│                        Web / Mobile App                              │
+│          sends: Authorization: Bearer <JWT>                          │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ HTTPS
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Load Balancer                                │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ REST API
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│              Backend - Spring Boot (Java 17 · :8080)                 │
+│                                                                     │
+│  ┌────────────────────┐                                             │
+│  │  Spring Security   │  validates JWT signature                     │
+│  │  JWT + Refresh     │                                             │
+│  └────────┬───────────┘                                             │
+│           ▼                                                        │
+│  ┌────────────────────┐                                             │
+│  │   Controllers       │  REST API                                    │
+│  │  Auth, Book, Audio, │                                              │
+│  │  Search, Library,   │                                              │
+│  │  Progress, Pay,     │                                              │
+│  │  Sub, DRM, Admin    │                                              │
+│  └────────┬───────────┘                                             │
+│           │                                                        │
+│           ├──────────────────────────┐                              │
+│           ▼                          ▼                              │
+│  ┌────────────────────┐  ┌──────────────────────────────┐          │
+│  │  Internal Modules   │  │ Content Delivery Service     │          │
+│  │                      │  │ (CDN signing + streaming)     │          │
+│  │ DRM Service          │  └────────┬─────────────────────┘          │
+│  │ Content Encryption   │           │ signed URL                      │
+│  │ HMAC Token Generator │           ▼                                │
+│  └────────────────────┘  ┌────────────────────┐                    │
+│           │               │  S3 CDN           │                    │
+│           ▼               └────────────────────┘                    │
+│  ┌────────────────────┐                                              │
+│  │ Kafka Producer     │  (reading progress events)                   │
+│  └────────────────────┘                                              │
+│           │                                                        │
+│           ▼                                                        │
+│  ┌────────────────────┐                                              │
+│  │     Redis Cache    │  refresh tokens, stream tokens               │
+│  └────────────────────┘                                              │
+│           │                                                        │
+│           ▼                                                        │
+│  ┌────────────────────────────────────────┐                        │
+│  │         MySQL (Flyway V1-V8)           │                        │
+│  │  Users, Books, Subscriptions,          │                        │
+│  │  Transactions, Devices, Progress       │                        │
+│  └────────────────────────────────────────┘                        │
+└─────────────────────────────────────────────────────────────────────┘
+                               │
+                               │ consumes reading-events
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│         Recommendation Service - FastAPI (:8000)                   │
+│                                                                     │
+│  ┌────────────────────┐                                             │
+│  │  Kafka Consumer     │                                             │
+│  └────────┬───────────┘                                             │
+│           ▼                                                        │
+│  ┌────────────────────┐                                             │
+│  │  Embedding Model    │  bag-of-words + cosine similarity            │
+│  └────────┬───────────┘                                             │
+│           ▼                                                        │
+│  ┌────────────────────┐                                             │
+│  │  REST API           │  /recommendations/{userId}                  │
+│  └────────────────────┘                                            │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 - **Backend** (`src/`) — Java 17 / Spring Boot 3: Auth (JWT), book catalog, search,
