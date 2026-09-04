@@ -20,7 +20,7 @@
     <properties>
         <java.version>17</java.version>
         <springdoc.version>2.5.0</springdoc.version>
-        <aws.sdk.version>2.25.34</aws.sdk.version>
+        <aws.sdk.version>2.54.9</aws.sdk.version>
         <testcontainers.version>1.19.8</testcontainers.version>
         <!-- Modernize Mockito/ByteBuddy: Spring Boot 3.2.x-managed versions
              (older) cannot instrument on newer JVMs and fail with
