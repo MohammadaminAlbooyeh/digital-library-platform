@@ -2,6 +2,7 @@ package com.dlp.drm;
 
 import com.dlp.model.entity.Device;
 import com.dlp.model.entity.User;
+import com.dlp.kms.KmsDataKeyService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -20,7 +21,9 @@ class DrmLicenseManagerTest {
     void setUp() {
         DrmTokenGenerator tokenGenerator = new DrmTokenGenerator();
         ReflectionTestUtils.setField(tokenGenerator, "signingKey", "my-strong-signing-key");
-        ContentEncryptionService encryptionService = new ContentEncryptionService("0123456789abcdef");
+        KmsDataKeyService kmsService = mock(KmsDataKeyService.class);
+        ContentEncryptionService encryptionService = new ContentEncryptionService(
+                "0123456789abcdef", kmsService);
 
         deviceService = mock(DeviceRegistrationService.class);
         when(deviceService.fingerprint(any())).thenReturn("device-hash");

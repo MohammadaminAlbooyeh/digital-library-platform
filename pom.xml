@@ -21,6 +21,7 @@
         <java.version>17</java.version>
         <springdoc.version>2.5.0</springdoc.version>
         <aws.sdk.version>2.25.34</aws.sdk.version>
+        <testcontainers.version>1.19.8</testcontainers.version>
         <!-- Modernize Mockito/ByteBuddy: Spring Boot 3.2.x-managed versions
              (older) cannot instrument on newer JVMs and fail with
              "Mockito cannot mock this class". NOTE: the full build still
@@ -96,6 +97,11 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>kms</artifactId>
+            <version>${aws.sdk.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
@@ -114,6 +120,18 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -39,6 +39,9 @@ class AuthControllerTest {
     private JwtService jwtService;
 
     @MockBean
+    private com.dlp.security.RefreshTokenService refreshTokenService;
+
+    @MockBean
     private com.dlp.security.CustomUserDetailsService customUserDetailsService;
 
     private User savedUser;
@@ -89,15 +92,54 @@ class AuthControllerTest {
         Authentication auth = new UsernamePasswordAuthenticationToken(principal, "secret123");
         when(authenticationManager.authenticate(any())).thenReturn(auth);
         when(jwtService.generateToken(any(UserDetails.class))).thenReturn("mock-jwt-token");
+        when(refreshTokenService.generateRefreshToken("alice@test.com")).thenReturn("mock-refresh-token");
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"alice@test.com\",\"password\":\"secret123\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("mock-jwt-token"))
+                .andExpect(jsonPath("$.accessToken").value("mock-jwt-token"))
                 .andExpect(jsonPath("$.email").value("alice@test.com"));
 
         verify(authenticationManager).authenticate(any());
         verify(jwtService).generateToken(any(UserDetails.class));
+    }
+
+    @Test
+    void refreshReturnsNewAccessTokenWhenTokenIsValid() throws Exception {
+        when(refreshTokenService.validateRefreshToken("alice@test.com", "valid-refresh-token")).thenReturn(true);
+        when(refreshTokenService.generateRefreshToken("alice@test.com")).thenReturn("new-refresh-token");
+        when(jwtService.generateToken(any(UserDetails.class))).thenReturn("new-access-token");
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"alice@test.com\",\"refreshToken\":\"valid-refresh-token\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("new-access-token"))
+                .andExpect(jsonPath("$.refreshToken").value("new-refresh-token"));
+
+        verify(refreshTokenService).revokeRefreshToken("alice@test.com");
+    }
+
+    @Test
+    void refreshRejectsInvalidToken() throws Exception {
+        when(refreshTokenService.validateRefreshToken("alice@test.com", "bad-token")).thenReturn(false);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"alice@test.com\",\"refreshToken\":\"bad-token\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Invalid or expired refresh token"));
+    }
+
+    @Test
+    void logoutRevokesRefreshToken() throws Exception {
+        mockMvc.perform(post("/api/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"alice@test.com\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Logged out"));
+
+        verify(refreshTokenService).revokeRefreshToken("alice@test.com");
     }
 }

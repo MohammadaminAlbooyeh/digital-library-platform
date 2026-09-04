@@ -39,6 +39,7 @@ app:
   jwt:
     secret: ${JWT_SECRET:test-secret-for-jwt-at-least-32-bytes-long-xyz}
     expiration-ms: 3600000   # 1 hour for tests
+    refresh-expiration-ms: 7200000   # 2 hours for tests
   aws:
     s3:
       region: us-east-1

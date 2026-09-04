@@ -3,6 +3,7 @@ package com.dlp.controller;
 import com.dlp.model.dto.ReadingProgressDTO;
 import com.dlp.security.CurrentUserProvider;
 import com.dlp.service.ReadingProgressService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +22,7 @@ public class ReadingProgressController {
 
     @PutMapping("/{contentId}")
     public ResponseEntity<ReadingProgressDTO> update(@PathVariable Long contentId,
-                                                     @RequestBody ReadingProgressDTO dto) {
+                                                      @Valid @RequestBody ReadingProgressDTO dto) {
         var user = currentUserProvider.currentUser();
         return ResponseEntity.ok(progressService.updateProgress(user, contentId, dto));
     }

@@ -47,6 +47,7 @@ app:
   jwt:
     secret: ${JWT_SECRET:change-me-to-a-very-long-secret-key-for-hs256-at-least-32-bytes}
     expiration-ms: 86400000   # 24 hours
+    refresh-expiration-ms: 604800000   # 7 days
   aws:
     s3:
       region: ${AWS_REGION:us-east-1}
@@ -56,6 +57,7 @@ app:
       cdn-base-url: ${CDN_BASE_URL:https://cdn.example.com}
   drm:
     encryption-key: ${DRM_ENCRYPTION_KEY:0123456789abcdef0123456789abcdef}
+    kms-key-id: ${KMS_KEY_ID:}
     license-ttl-hours: 48
   delivery:
     streaming-chunk-size: 1048576

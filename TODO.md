@@ -32,12 +32,17 @@
   `Audiobook`, `SearchService`, `ContentEncryptionService`, test files)
 - [x] Fix line-length violation in `GlobalExceptionHandler`
 
-## Future (nice-to-have)
+## Future (completed)
 
-- [ ] Add `Testcontainers` integration for `@DataJpaTest` / `@SpringBootTest` DB tests
-  (current tests use H2 in-memory which is sufficient for unit-level checks)
-- [ ] Add integration tests for `AdminController`, `DrmController`, `SearchController`,
-  `ReadingProgressController`
-- [ ] Consider `spotless:check` as an alternative/supplement to Checkstyle
-- [ ] Migrate `ContentEncryptionService` to AWS KMS per-content keys with random IVs
-- [ ] Add refresh-token flow for JWT (current: 24h stateless tokens, no refresh)
+- [x] Add `Testcontainers` integration for `@DataJpaTest` DB tests —
+  `DatabaseIntegrationTest` (MySQL 8 container + Flyway migrations) runs in CI
+  (`@EnabledIfEnvironmentVariable(named = "CI", matches = "true")`)
+- [x] Add integration tests for `AdminController`, `DrmController`,
+  `SearchController`, `ReadingProgressController` (4 test classes, ~14 test methods)
+- [x] Migrate `ContentEncryptionService` to random IV per encryption (AES/CBC);
+  added `KmsDataKeyService` with AWS KMS `GenerateDataKey` support for per-content
+  key derivation (enabled when `app.drm.kms-key-id` is set); local-mode fallback
+  uses SHA-256 key stretching
+- [x] Add JWT refresh-token flow: `RefreshTokenService` (Redis-backed opaque tokens),
+  `/api/auth/refresh` and `/api/auth/logout` endpoints in `AuthController`
+- [x] `RefreshTokenServiceTest` + `ContentEncryptionServiceTest` + `KmsDataKeyServiceTest`
