@@ -8,121 +8,104 @@ microservice, and Docker-based infrastructure.
 ## Architecture
 
 ```mermaid
-graph TB
-    subgraph "Client Layer"
-        CLIENT[Web / Mobile App]
+%%{init: {'theme':'default','flowchart':{'curve':'linear'}}}%%
+flowchart LR
+    subgraph CLIENT["Client"]
+        CLI[Web / Mobile App]
     end
 
-    subgraph "Edge"
-        CDN_S3[S3 CDN<br/>content & covers]
+    subgraph "Public Edge"
         LB[Load Balancer]
+        CDN[AWS S3 CDN]
     end
 
-    subgraph "Backend (Spring Boot<br/>Java 17 · port 8080)"
-        AUTH[Auth Controller<br/>JWT + Refresh Tokens]
-        BOOKS[Book Catalog<br/>/api/books]
-        AUDIO[Audiobook Catalog<br/>/api/audiobooks]
-        SEARCH[Search Controller<br/>/api/search]
-        LIB[Library Controller<br/>/api/library]
-        PROGRESS[Reading Progress<br/>/api/progress]
-        SUB[Subscription<br/>/api/subscriptions]
-        PAY[Payment<br/>/api/payments]
-        DRM[DrmController<br/>/api/drm]
-        ADMIN[AdminController<br/>/api/admin]
+    subgraph "Backend - Spring Boot"
+        AUTH[Auth Controller]
+        CATALOG[Book Catalog API]
+        SEARCH[Search API]
+        LIBRARY[Library API]
+        PROGRESS[Reading Progress]
+        PAYMENTS[Payments API]
+        SUBSCRIPTIONS[Subscriptions API]
+        DRM[DRM API]
+        ADMIN[Admin API]
 
-        subgraph "Internal Modules"
-            DRM_SVC[DRM Service<br/>license + device mgmt]
-            DRM_ENC[ContentEncryption<br/>AES-CBC + KMS]
-            DRM_TOKEN[DrmTokenGenerator<br/>HMAC signing]
-            DELIVY[ContentDeliveryService<br/>CDN signing + streaming]
-            REC[RecommendationClient<br/>calls reco-service]
-            KAFKA_PUB[ReadingEventProducer<br/>publishes to Kafka]
+        subgraph "Internal"
+            DRM_SVC[DRM Service]
+            ENCRYPTION[Content Encryption]
+            SIGNING[HMAC Token Signing]
+            DELIVERY[Content Delivery]
+            KAFKA_PUB[Kafka Producer]
         end
     end
 
-    subgraph "Recommendation Service (FastAPI<br/>Python · port 8000)"
-        RECO_API["REST /recommendations/{userId}"]
-        RECO_MODEL[Embedding Model<br/>bag-of-words + cosine]
+    subgraph "Rec-Svc"
+        RECO[FastAPI Rec Service]
     end
 
-    subgraph "Data & Infrastructure (Docker)"
-        MYSQL[(MySQL 8.0<br/>Flyway migrations V1–V8)]
-        REDIS[(Redis<br/>session cache + refresh tokens)]
-        KAFKA[(Kafka<br/>+ Zookeeper)]
-        S3[AWS S3<br/>content storage + KMS]
+    subgraph "Infrastructure"
+        MYSQL[(MySQL)]
+        REDIS[(Redis)]
+        KAFKA[(Kafka)]
+        S3[(AWS S3 + KMS)]
     end
 
-    %% Client traffic
-    CLIENT -->|HTTPS| LB
-    LB -->|REST API| AUTH
-    LB -->|REST API| BOOKS
-    LB -->|REST API| AUDIO
-    LB -->|REST API| SEARCH
-    LB -->|REST API| LIB
-    LB -->|REST API| PROGRESS
-    LB -->|REST API| SUB
-    LB -->|REST API| PAY
-    LB -->|REST API| DRM
-    LB -->|REST API| ADMIN
+    CLI ==>|"HTTPS"| LB
+    LB ==>|"REST API"| AUTH
+    LB ==>|"REST API"| CATALOG
+    LB ==>|"REST API"| SEARCH
+    LB ==>|"REST API"| LIBRARY
+    LB ==>|"REST API"| PROGRESS
+    LB ==>|"REST API"| PAYMENTS
+    LB ==>|"REST API"| SUBSCRIPTIONS
+    LB ==>|"REST API"| DRM
+    LB ==>|"REST API"| ADMIN
 
-    %% Backend → databases
-    AUTH -->|users / subscriptions| MYSQL
-    BOOKS -->|books / authors / categories| MYSQL
-    AUDIO -->|audiobooks| MYSQL
-    SEARCH -->|full-text search| MYSQL
-    LIB -->|library ownership| MYSQL
-    PROGRESS -->|reading progress| MYSQL
-    SUB -->|subscriptions / plans| MYSQL
-    PAY -->|transactions| MYSQL
-    DRM -->|devices / licenses| MYSQL
-    ADMIN -->|stats / reports| MYSQL
+    AUTH ==>|DB| MYSQL
+    CATALOG ==>|DB| MYSQL
+    SEARCH ==>|DB| MYSQL
+    LIBRARY ==>|DB| MYSQL
+    PROGRESS ==>|DB| MYSQL
+    PAYMENTS ==>|DB| MYSQL
+    SUBSCRIPTIONS ==>|DB| MYSQL
+    DRM ==>|DB| MYSQL
+    ADMIN ==>|DB| MYSQL
 
-    %% Backend → Redis
-    AUTH -->|refresh tokens| REDIS
-    LIB -->|stream/download tokens| REDIS
-    DELIVY -->|cache| REDIS
+    AUTH ==>|refresh| REDIS
+    LIBRARY ==>|tokens| REDIS
+    DELIVERY -.->|cache| REDIS
 
-    %% Backend → Kafka
-    PROGRESS -->|reading events| KAFKA_PUB
-    KAFKA_PUB -->|publish| KAFKA
-    RECO -->|consume reading-events| KAFKA
+    PROGRESS ==>|events| KAFKA_PUB
+    KAFKA_PUB ==>|produce| KAFKA
+    RECO -.->|consume| KAFKA
 
-    %% Backend → Recommendation service
-    LIB -->|fallback recommendations| REC
-    REC -->|HTTP| RECO_API
-    RECO_API --> RECO_MODEL
+    LIBRARY ==>|fallback| RECO
+    RECO ==>|"HTTP"| DELIVERY
+    DELIVERY ==>|"signed URL"| CDN
 
-    %% Backend → DRM internal
-    LIB -->|DRM license| DRM_SVC
-    DRM --> DRM_SVC
-    DRM_SVC --> DRM_ENC
-    DRM_SVC --> DRM_TOKEN
+    LIBRARY ==>|DRM| DRM_SVC
+    DRM ==> DRM_SVC
+    DRM_SVC ==> ENCRYPTION
+    DRM_SVC ==> SIGNING
+    DELIVERY ==>|content| S3
+    ENCRYPTION ==>|keys| S3
 
-    %% Backend → Content delivery
-    LIB -->|stream/download| DELIVY
-    DELIVY -->|signed URL| CDN_S3
-    LIB -->|DRM license| DELIVY
+    classDef store fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef cache fill:#ede7f6,stroke:#7b1fa2,stroke-width:2px
+    classDef events fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef cloud fill:#fce4ec,stroke:#c2185b,stroke-width:2px
 
-    %% Backend → S3 / KMS
-    DELIVY -->|fetch content| S3
-    DRM_ENC -->|data keys| S3
-
-    style MYSQL fill:#e3f2fd
-    style REDIS fill:#ede7f6
-    style KAFKA fill:#fff3e0
-    style S3 fill:#fce4ec
+    class MYSQL,REDIS,KAFKA store
+    class S3 cloud
 ```
 
-- **Backend** (`src/`) — Java 17 / Spring Boot 3
-  - Auth (JWT), book catalog, search, subscriptions, payments
-  - DRM module (device registration, license issuance, content encryption)
-  - Content delivery (CDN URL signing, download tokens, streaming chunks)
-  - Reading progress tracking with Kafka event publishing
-  - Redis caching, Flyway migrations, MySQL
-- **Recommendation service** (`recommendation-service/`) — Python / FastAPI
-  - Exposes `/recommendations/{userId}`
-  - Consumes Kafka `reading-events` to build per-user profiles
-- **Infrastructure** (`docker/`) — MySQL, Redis, Kafka, Zookeeper
+- **Backend** (`src/`) — Java 17 / Spring Boot 3: Auth (JWT), book catalog, search,
+  subscriptions, payments, DRM (device registration, license issuance, content encryption),
+  content delivery (CDN URL signing, download tokens, streaming chunks), reading progress
+  with Kafka events, Redis cache, Flyway MySQL migrations.
+- **Recommendation service** (`recommendation-service/`) — Python / FastAPI: exposes
+  `/recommendations/{userId}`, consumes Kafka `reading-events` for per-user profiles.
+- **Infrastructure** (`docker/`) — MySQL, Redis, Kafka + Zookeeper, AWS S3/KMS.
 
 ## Prerequisites
 
