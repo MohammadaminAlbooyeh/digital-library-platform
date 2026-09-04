@@ -194,6 +194,7 @@ digital-library-platform/
 │   │   │   │   └── UserRepository.java
 │   │   │   ├── security/
 │   │   │   │   ├── CurrentUserProvider.java
+│   │   │   │   ├── CustomUserDetailsService.java
 │   │   │   │   ├── JwtAuthenticationFilter.java
 │   │   │   │   ├── JwtService.java
 │   │   │   │   └── RefreshTokenService.java
