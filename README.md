@@ -84,6 +84,185 @@ microservice, and Docker-based infrastructure.
   `/recommendations/{userId}`, consumes Kafka `reading-events` for per-user profiles.
 - **Infrastructure** (`docker/`) — MySQL, Redis, Kafka + Zookeeper, AWS S3/KMS.
 
+## Project structure
+
+```
+digital-library-platform/
+├── .github/
+│   ├── workflows/
+│   │   └── ci.yml
+│   └── dependabot.yml
+├── docker/
+│   ├── docker-compose.yml
+│   └── Dockerfile
+├── recommendation-service/
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── recommendation_router.py
+│   │   ├── consumers/
+│   │   │   └── reading_event_consumer.py
+│   │   ├── models/
+│   │   │   └── embedding_model.py
+│   │   ├── services/
+│   │   │   └── recommendation_service.py
+│   │   └── main.py
+│   ├── tests/
+│   │   ├── test_api.py
+│   │   ├── test_embedding_model.py
+│   │   └── test_recommendation_service.py
+│   ├── conftest.py
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── requirements-dev.txt
+│   └── requirements.lock
+├── src/
+│   ├── main/
+│   │   ├── java/com/dlp/
+│   │   │   ├── DigitalLibraryPlatformApplication.java
+│   │   │   ├── config/
+│   │   │   │   ├── KafkaConfig.java
+│   │   │   │   ├── RedisCacheConfig.java
+│   │   │   │   ├── S3Config.java
+│   │   │   │   ├── SecurityConfig.java
+│   │   │   │   └── SwaggerConfig.java
+│   │   │   ├── controller/
+│   │   │   │   ├── AdminController.java
+│   │   │   │   ├── AudiobookController.java
+│   │   │   │   ├── AuthController.java
+│   │   │   │   ├── BookController.java
+│   │   │   │   ├── DrmController.java
+│   │   │   │   ├── LibraryController.java
+│   │   │   │   ├── PaymentController.java
+│   │   │   │   ├── PublisherController.java
+│   │   │   │   ├── ReadingProgressController.java
+│   │   │   │   ├── SearchController.java
+│   │   │   │   └── SubscriptionController.java
+│   │   │   ├── delivery/
+│   │   │   │   ├── CdnUrlSigner.java
+│   │   │   │   ├── DownloadTokenService.java
+│   │   │   │   └── StreamingChunkService.java
+│   │   │   ├── drm/
+│   │   │   │   ├── ContentEncryptionService.java
+│   │   │   │   ├── DeviceRegistrationService.java
+│   │   │   │   ├── DrmLicenseManager.java
+│   │   │   │   └── DrmTokenGenerator.java
+│   │   │   ├── exception/
+│   │   │   │   ├── ContentNotOwnedException.java
+│   │   │   │   ├── DrmViolationException.java
+│   │   │   │   ├── GlobalExceptionHandler.java
+│   │   │   │   └── SubscriptionExpiredException.java
+│   │   │   ├── kms/
+│   │   │   │   └── KmsDataKeyService.java
+│   │   │   ├── messaging/
+│   │   │   │   ├── PurchaseEventProducer.java
+│   │   │   │   └── ReadingEventProducer.java
+│   │   │   ├── model/
+│   │   │   │   ├── dto/
+│   │   │   │   │   ├── BookDetailDTO.java
+│   │   │   │   │   ├── ReadingProgressDTO.java
+│   │   │   │   │   ├── SearchRequest.java
+│   │   │   │   │   ├── StreamAccessDTO.java
+│   │   │   │   │   └── SubscriptionPlanDTO.java
+│   │   │   │   ├── entity/
+│   │   │   │   │   ├── Audiobook.java
+│   │   │   │   │   ├── Author.java
+│   │   │   │   │   ├── Book.java
+│   │   │   │   │   ├── Category.java
+│   │   │   │   │   ├── Device.java
+│   │   │   │   │   ├── Publisher.java
+│   │   │   │   │   ├── ReadingProgress.java
+│   │   │   │   │   ├── Subscription.java
+│   │   │   │   │   ├── Transaction.java
+│   │   │   │   │   ├── User.java
+│   │   │   │   │   └── UserLibraryItem.java
+│   │   │   │   └── enums/
+│   │   │   │       ├── AccessType.java
+│   │   │   │       ├── ContentType.java
+│   │   │   │       └── SubscriptionStatus.java
+│   │   │   ├── recommendation/
+│   │   │   │   ├── FallbackRecommendationStrategy.java
+│   │   │   │   └── RecommendationClient.java
+│   │   │   ├── repository/
+│   │   │   │   ├── AudiobookRepository.java
+│   │   │   │   ├── BookRepository.java
+│   │   │   │   ├── DeviceRepository.java
+│   │   │   │   ├── PublisherRepository.java
+│   │   │   │   ├── ReadingProgressRepository.java
+│   │   │   │   ├── SubscriptionRepository.java
+│   │   │   │   ├── TransactionRepository.java
+│   │   │   │   ├── UserLibraryRepository.java
+│   │   │   │   └── UserRepository.java
+│   │   │   ├── security/
+│   │   │   │   ├── CurrentUserProvider.java
+│   │   │   │   ├── JwtAuthenticationFilter.java
+│   │   │   │   ├── JwtService.java
+│   │   │   │   └── RefreshTokenService.java
+│   │   │   ├── service/
+│   │   │   │   ├── AuthService.java
+│   │   │   │   ├── BookCatalogService.java
+│   │   │   │   ├── ContentDeliveryService.java
+│   │   │   │   ├── DrmService.java
+│   │   │   │   ├── LibraryService.java
+│   │   │   │   ├── PaymentService.java
+│   │   │   │   ├── PublisherRoyaltyService.java
+│   │   │   │   ├── ReadingProgressService.java
+│   │   │   │   ├── SearchService.java
+│   │   │   │   └── SubscriptionService.java
+│   │   │   └── util/
+│   │   │       └── FileFormatValidator.java
+│   │   ├── resources/
+│   │   │   ├── application.yml
+│   │   │   ├── application-prod.yml
+│   │   │   └── db/migration/
+│   │   │       ├── V1__create_books_table.sql
+│   │   │       ├── V2__create_audiobooks_table.sql
+│   │   │       ├── V3__create_publishers_authors_table.sql
+│   │   │       ├── V4__create_user_library_table.sql
+│   │   │       ├── V5__create_subscriptions_table.sql
+│   │   │       ├── V6__create_devices_table.sql
+│   │   │       ├── V7__create_reading_progress_table.sql
+│   │   │       └── V8__seed_demo_data.sql
+│   └── test/
+│   │   ├── java/com/dlp/
+│   │   │   ├── config/TestSecurityConfig.java
+│   │   │   ├── controller/
+│   │   │   │   ├── AdminControllerTest.java
+│   │   │   │   ├── AuthControllerTest.java
+│   │   │   │   ├── AudiobookControllerTest.java
+│   │   │   │   ├── BookControllerTest.java
+│   │   │   │   ├── DrmControllerTest.java
+│   │   │   │   ├── LibraryControllerTest.java
+│   │   │   │   ├── PaymentControllerTest.java
+│   │   │   │   ├── ReadingProgressControllerTest.java
+│   │   │   │   ├── SearchControllerTest.java
+│   │   │   │   └── SubscriptionControllerTest.java
+│   │   │   ├── delivery/CdnUrlSignerTest.java
+│   │   │   ├── drm/
+│   │   │   │   ├── ContentEncryptionServiceTest.java
+│   │   │   │   ├── DeviceRegistrationServiceTest.java
+│   │   │   │   └── DrmLicenseManagerTest.java
+│   │   │   ├── integration/DatabaseIntegrationTest.java
+│   │   │   ├── kms/KmsDataKeyServiceTest.java
+│   │   │   ├── security/RefreshTokenServiceTest.java
+│   │   │   └── service/
+│   │   │       ├── AuthServiceTest.java
+│   │   │       ├── BookCatalogServiceTest.java
+│   │   │       ├── ContentDeliveryServiceTest.java
+│   │   │       ├── LibraryServiceTest.java
+│   │   │       ├── PaymentServiceTest.java
+│   │   │       ├── PublisherRoyaltyServiceTest.java
+│   │   │       ├── ReadingProgressServiceTest.java
+│   │   │       ├── SearchServiceTest.java
+│   │   │       └── SubscriptionServiceTest.java
+│   │   └── resources/
+│   │       └── application-test.yml
+├── checkstyle.xml
+├── pom.xml
+├── CONTRIBUTING.md
+├── CODE_OF_CONDUCT.md
+└── TODO.md
+```
+
 ## Prerequisites
 
 - JDK 17+
