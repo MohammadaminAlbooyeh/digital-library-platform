@@ -25,6 +25,9 @@
   documented known issue — static zero IV (fix: use KMS-derived per-content key + random IV)
 - [x] Create `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` (Contributor Covenant v2.1)
 - [x] Set up Dependabot — `.github/dependabot.yml` (Maven weekly + pip weekly)
+  **Confirmed working:** 6 Dependabot PRs auto-generated after first push
+  (spring-boot-starter-parent, AWS SDK, springdoc-openapi, checkstyle-plugin,
+  Jackson, Python deps)
 - [x] Fix unused imports found by Checkstyle (`SearchController`, `BookController`,
   `Audiobook`, `SearchService`, `ContentEncryptionService`, test files)
 - [x] Fix line-length violation in `GlobalExceptionHandler`
