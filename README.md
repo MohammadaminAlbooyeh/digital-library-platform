@@ -9,77 +9,70 @@ microservice, and Docker-based infrastructure.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                              Client                                  │
-│                        Web / Mobile App                              │
-│          sends: Authorization: Bearer <JWT>                          │
+│                        Client                                       │
+│                  Web / Mobile App                                   │
+│     sends: Authorization: Bearer <JWT>                              │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │ HTTPS
                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        Load Balancer                                │
+│                       Load Balancer                                 │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │ REST API
                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│              Backend - Spring Boot (Java 17 · :8080)                 │
+│     Backend - Spring Boot (Java 17 · :8080)                          │
 │                                                                     │
-│  ┌────────────────────┐                                             │
-│  │  Spring Security   │  validates JWT signature                     │
-│  │  JWT + Refresh     │                                             │
-│  └────────┬───────────┘                                             │
-│           ▼                                                        │
-│  ┌────────────────────┐                                             │
-│  │   Controllers       │  REST API                                    │
-│  │  Auth, Book, Audio, │                                              │
-│  │  Search, Library,   │                                              │
-│  │  Progress, Pay,     │                                              │
-│  │  Sub, DRM, Admin    │                                              │
-│  └────────┬───────────┘                                             │
-│           │                                                        │
-│           ├──────────────────────────┐                              │
-│           ▼                          ▼                              │
-│  ┌────────────────────┐  ┌──────────────────────────────┐          │
-│  │  Internal Modules   │  │ Content Delivery Service     │          │
-│  │                      │  │ (CDN signing + streaming)     │          │
-│  │ DRM Service          │  └────────┬─────────────────────┘          │
-│  │ Content Encryption   │           │ signed URL                      │
-│  │ HMAC Token Generator │           ▼                                │
-│  └────────────────────┘  ┌────────────────────┐                    │
-│           │               │  S3 CDN           │                    │
-│           ▼               └────────────────────┘                    │
-│  ┌────────────────────┐                                              │
-│  │ Kafka Producer     │  (reading progress events)                   │
-│  └────────────────────┘                                              │
-│           │                                                        │
-│           ▼                                                        │
-│  ┌────────────────────┐                                              │
-│  │     Redis Cache    │  refresh tokens, stream tokens               │
-│  └────────────────────┘                                              │
-│           │                                                        │
-│           ▼                                                        │
-│  ┌────────────────────────────────────────┐                        │
-│  │         MySQL (Flyway V1-V8)           │                        │
-│  │  Users, Books, Subscriptions,          │                        │
-│  │  Transactions, Devices, Progress       │                        │
-│  └────────────────────────────────────────┘                        │
+│   ┌──────────────────────────────┐                                  │
+│   │  Spring Security             │  validates JWT signature         │
+│   │  JWT + Refresh Tokens        │                                  │
+│   └──────────────┬───────────────┘                                  │
+│                   ▼                                                  │
+│   ┌──────────────────────────────┐                                  │
+│   │     Controllers              │  REST API                        │
+│   │  Auth, Book, Audio, Search,  │                                  │
+│   │  Library, Progress, Pay,      │                                  │
+│   │  Sub, DRM, Admin             │                                  │
+│   └──────────────┬───────────────┘                                  │
+│                   ▼                                                  │
+│   ┌──────────────────────────────┐                                  │
+│   │  Internal Modules            │                                  │
+│   │  DRM Service · Content Encr. │  AES-CBC + KMS (random IV)      │
+│   │  HMAC Signing · CD Delivery   │  CDN URL signing               │
+│   │  Kafka Producer               │  reading-progress events        │
+│   └──────────────┬───────────────┘                                  │
+│                   │                                                  │
+│                   ├──────────────────┐                             │
+│                   ▼                  ▼                             │
+│   ┌──────────────────────┐  ┌──────────────────────┐              │
+│   │   Redis Cache        │  │  MySQL (Flyway V1-V8) │              │
+│   │  refresh tokens      │  │  users, books,       │              │
+│   │  stream tokens       │  │  subscriptions, etc  │              │
+│   └──────────────────────┘  └──────────────────────┘              │
 └─────────────────────────────────────────────────────────────────────┘
                                │
-                               │ consumes reading-events
+                               │ reading-events (Kafka)
                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│         Recommendation Service - FastAPI (:8000)                   │
+│         Recommendation Service - FastAPI (Python · :8000)           │
 │                                                                     │
-│  ┌────────────────────┐                                             │
-│  │  Kafka Consumer     │                                             │
-│  └────────┬───────────┘                                             │
-│           ▼                                                        │
-│  ┌────────────────────┐                                             │
-│  │  Embedding Model    │  bag-of-words + cosine similarity            │
-│  └────────┬───────────┘                                             │
-│           ▼                                                        │
-│  ┌────────────────────┐                                             │
-│  │  REST API           │  /recommendations/{userId}                  │
-│  └────────────────────┘                                            │
+│   ┌──────────────────────────────┐                                  │
+│   │  Kafka Consumer              │  consumes reading-events         │
+│   └──────────────┬───────────────┘                                  │
+│                   ▼                                                  │
+│   ┌──────────────────────────────┐                                  │
+│   │  Embedding Model             │  bag-of-words + cosine          │
+│   └──────────────┬───────────────┘                                  │
+│                   ▼                                                  │
+│   ┌──────────────────────────────┐                                  │
+│   │  REST API                    │  /recommendations/{userId}       │
+│   └──────────────────────────────┘                                  │
+└─────────────────────────────────────────────────────────────────────┘
+                               │
+                               │ content fetch
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│              AWS S3 + KMS (content storage & keys)                  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
