@@ -228,7 +228,6 @@ digital-library-platform/
 │   │   │   ├── controller/
 │   │   │   │   ├── AdminControllerTest.java
 │   │   │   │   ├── AuthControllerTest.java
-│   │   │   │   ├── AudiobookControllerTest.java
 │   │   │   │   ├── BookControllerTest.java
 │   │   │   │   ├── DrmControllerTest.java
 │   │   │   │   ├── LibraryControllerTest.java
