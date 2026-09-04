@@ -7,6 +7,112 @@ microservice, and Docker-based infrastructure.
 
 ## Architecture
 
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        CLIENT[Web / Mobile App]
+    end
+
+    subgraph "Edge"
+        CDN_S3[S3 CDN<br/>content & covers]
+        LB[Load Balancer]
+    end
+
+    subgraph "Backend (Spring Boot<br/>Java 17 · port 8080)"
+        AUTH[Auth Controller<br/>JWT + Refresh Tokens]
+        BOOKS[Book Catalog<br/>/api/books]
+        AUDIO[Audiobook Catalog<br/>/api/audiobooks]
+        SEARCH[Search Controller<br/>/api/search]
+        LIB[Library Controller<br/>/api/library]
+        PROGRESS[Reading Progress<br/>/api/progress]
+        SUB[Subscription<br/>/api/subscriptions]
+        PAY[Payment<br/>/api/payments]
+        DRM[DrmController<br/>/api/drm]
+        ADMIN[AdminController<br/>/api/admin]
+
+        subgraph "Internal Modules"
+            DRM_SVC[DRM Service<br/>license + device mgmt]
+            DRM_ENC[ContentEncryption<br/>AES-CBC + KMS]
+            DRM_TOKEN[DrmTokenGenerator<br/>HMAC signing]
+            DELIVY[ContentDeliveryService<br/>CDN signing + streaming]
+            REC[RecommendationClient<br/>calls reco-service]
+            KAFKA_PUB[ReadingEventProducer<br/>publishes to Kafka]
+        end
+    end
+
+    subgraph "Recommendation Service (FastAPI<br/>Python · port 8000)"
+        RECO_API["REST /recommendations/{userId}"]
+        RECO_MODEL[Embedding Model<br/>bag-of-words + cosine]
+    end
+
+    subgraph "Data & Infrastructure (Docker)"
+        MYSQL[(MySQL 8.0<br/>Flyway migrations V1–V8)]
+        REDIS[(Redis<br/>session cache + refresh tokens)]
+        KAFKA[(Kafka<br/>+ Zookeeper)]
+        S3[AWS S3<br/>content storage + KMS]
+    end
+
+    %% Client traffic
+    CLIENT -->|HTTPS| LB
+    LB -->|REST API| AUTH
+    LB -->|REST API| BOOKS
+    LB -->|REST API| AUDIO
+    LB -->|REST API| SEARCH
+    LB -->|REST API| LIB
+    LB -->|REST API| PROGRESS
+    LB -->|REST API| SUB
+    LB -->|REST API| PAY
+    LB -->|REST API| DRM
+    LB -->|REST API| ADMIN
+
+    %% Backend → databases
+    AUTH -->|users / subscriptions| MYSQL
+    BOOKS -->|books / authors / categories| MYSQL
+    AUDIO -->|audiobooks| MYSQL
+    SEARCH -->|full-text search| MYSQL
+    LIB -->|library ownership| MYSQL
+    PROGRESS -->|reading progress| MYSQL
+    SUB -->|subscriptions / plans| MYSQL
+    PAY -->|transactions| MYSQL
+    DRM -->|devices / licenses| MYSQL
+    ADMIN -->|stats / reports| MYSQL
+
+    %% Backend → Redis
+    AUTH -->|refresh tokens| REDIS
+    LIB -->|stream/download tokens| REDIS
+    DELIVY -->|cache| REDIS
+
+    %% Backend → Kafka
+    PROGRESS -->|reading events| KAFKA_PUB
+    KAFKA_PUB -->|publish| KAFKA
+    RECO -->|consume reading-events| KAFKA
+
+    %% Backend → Recommendation service
+    LIB -->|fallback recommendations| REC
+    REC -->|HTTP| RECO_API
+    RECO_API --> RECO_MODEL
+
+    %% Backend → DRM internal
+    LIB -->|DRM license| DRM_SVC
+    DRM --> DRM_SVC
+    DRM_SVC --> DRM_ENC
+    DRM_SVC --> DRM_TOKEN
+
+    %% Backend → Content delivery
+    LIB -->|stream/download| DELIVY
+    DELIVY -->|signed URL| CDN_S3
+    LIB -->|DRM license| DELIVY
+
+    %% Backend → S3 / KMS
+    DELIVY -->|fetch content| S3
+    DRM_ENC -->|data keys| S3
+
+    style MYSQL fill:#e3f2fd
+    style REDIS fill:#ede7f6
+    style KAFKA fill:#fff3e0
+    style S3 fill:#fce4ec
+```
+
 - **Backend** (`src/`) — Java 17 / Spring Boot 3
   - Auth (JWT), book catalog, search, subscriptions, payments
   - DRM module (device registration, license issuance, content encryption)
@@ -70,7 +176,9 @@ Configuration is externalized via environment variables (see `src/main/resources
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/auth/register` | Register a user |
-| POST | `/api/auth/login` | Obtain a JWT |
+| POST | `/api/auth/login` | Obtain JWT + refresh token |
+| POST | `/api/auth/refresh` | Refresh access token |
+| POST | `/api/auth/logout` | Revoke refresh token |
 | GET | `/api/books` | List books |
 | GET | `/api/books/{id}` | Book details |
 | GET | `/api/search` | Search books |
